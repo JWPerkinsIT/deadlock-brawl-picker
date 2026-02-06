@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Street Brawl Item Priority Companion for Deadlock - Hero-specific item tier lists, pick advisor, and build path guide" />
+    <meta name="theme-color" content="#0a0b0f" />
+    <meta property="og:title" content="Deadlock Brawl Picker" />
+    <meta property="og:description" content="Street Brawl Item Priority Companion - Know what to pick every round" />
+    <meta property="og:type" content="website" />
+    <title>Deadlock Brawl Picker | Street Brawl Item Companion</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body, #root { width: 100%; min-height: 100vh; }
+      body { background: #07080c; }
+      #root:empty::after {
+        content: 'Loading...';
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        color: #e8a535;
+        font-family: sans-serif;
+        font-size: 18px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
