@@ -991,82 +991,16 @@ export default function SimulationView() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
-            {currentItems.map((item, itemIndex) => {
-              const isSelected = selectedItemIndex === itemIndex;
-              return (
-                <div
-                  key={`${item.id}-${itemIndex}`}
-                  onClick={() => handleItemSelect(itemIndex)}
-                  style={{
-                    cursor: "pointer",
-                    border: isSelected ? "2px solid #e8a535" : "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: "8px",
-                    padding: isSelected ? "11px" : "12px",
-                    background: isSelected
-                      ? "rgba(232,165,53,0.08)"
-                      : "rgba(19,21,27,0.95)",
-                    position: "relative",
-                    overflow: "hidden",
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {isSelected && (
-                    <div style={{
-                      position: "absolute", top: "8px", right: "8px",
-                      background: "#e8a535", borderRadius: "50%", width: "22px", height: "22px",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <Check size={12} color="#0a0b0f" strokeWidth={3} />
-                    </div>
-                  )}
-                  {item.legendary && (
-                    <div style={{
-                      position: "absolute", top: 0, right: isSelected ? "36px" : 0,
-                      background: "linear-gradient(135deg, transparent 50%, rgba(232,165,53,0.3) 50%)",
-                      width: "32px", height: "32px",
-                    }}>
-                      <Crown size={10} color="#e8a535" style={{ position: "absolute", top: "4px", right: "4px" }} />
-                    </div>
-                  )}
-                  {item.enhanced && (
-                    <div style={{
-                      position: "absolute", top: "6px", left: "6px",
-                      fontSize: "10px", fontWeight: 700, color: "#ffd700",
-                      background: "rgba(255,215,0,0.12)", border: "1px solid rgba(255,215,0,0.3)",
-                      borderRadius: "3px", padding: "1px 5px", textTransform: "uppercase",
-                    }}>Enhanced</div>
-                  )}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", marginTop: item.enhanced ? "18px" : "0" }}>
-                    <CatIcon cat={item.cat} size={16} />
-                    <span style={{
-                      fontFamily: "'Rajdhani', sans-serif", fontWeight: 600,
-                      fontSize: "16px", color: "#fff", flex: 1, lineHeight: 1.2,
-                    }}>
-                      {item.name}
-                    </span>
-                    <span style={styles.ratingBadge(getItemRating(item, null))}>{getItemRating(item, null)}</span>
-                  </div>
-                  <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
-                    <span style={styles.catBadge(item.cat)}>{CAT_LABELS[item.cat]}</span>
-                    <span style={styles.tierBadge(item.tier)}>
-                      {item.tier === 5 ? "Legendary" : `T${TIER_NAMES[item.tier]}`}
-                    </span>
-                    {item.active && (
-                      <span style={{
-                        fontSize: "10px", fontWeight: 600, color: "#4a90d9",
-                        background: "rgba(74,144,217,0.12)", border: "1px solid rgba(74,144,217,0.3)",
-                        borderRadius: "3px", padding: "1px 5px", textTransform: "uppercase",
-                      }}>Active</span>
-                    )}
-                  </div>
-                  {item.desc && (
-                    <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#888", lineHeight: 1.3 }}>
-                      {item.desc}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
+            {currentItems.map((item, itemIndex) => (
+              <ItemCard
+                key={`${item.id}-${itemIndex}`}
+                item={item}
+                hero={playerHero}
+                round={currentRound}
+                onClick={() => handleItemSelect(itemIndex)}
+                selected={selectedItemIndex === itemIndex}
+              />
+            ))}
           </div>
 
           {/* Action Bar */}

@@ -50,9 +50,9 @@ export const HEROES = [
 export const ITEMS = [
   // ---- WEAPON T1 (800) ----
   { id: "close_quarters", name: "Close Quarters", cat: "weapon", tier: 1, active: false, tags: ["close_range", "damage"], brawlRating: "A", desc: "+25% Weapon Damage within 15m" },
-  { id: "extended_mag", name: "Extended Magazine", cat: "weapon", tier: 1, active: false, tags: ["fire_rate", "damage"], brawlRating: "B", desc: "+20% Ammo, +8% Weapon Damage" },
+  { id: "extended_mag", name: "Extended Magazine", cat: "weapon", tier: 1, active: false, tags: ["fire_rate", "damage"], brawlRating: "B", desc: "+20% Ammo, +8% Weapon Damage", img: "basic_magazine" },
   { id: "headshot_booster", name: "Headshot Booster", cat: "weapon", tier: 1, active: false, tags: ["burst", "damage"], brawlRating: "A", desc: "+40 Headshot Bonus Damage" },
-  { id: "high_velocity", name: "High-Velocity Rounds", cat: "weapon", tier: 1, active: false, tags: ["damage", "long_range"], brawlRating: "B", desc: "+12% Bullet Velocity, +8% Damage" },
+  { id: "high_velocity", name: "High-Velocity Rounds", cat: "weapon", tier: 1, active: false, tags: ["damage", "long_range"], brawlRating: "B", desc: "+12% Bullet Velocity, +8% Damage", img: "high_velocity_rounds" },
   { id: "monster_rounds", name: "Monster Rounds", cat: "weapon", tier: 1, active: false, tags: ["sustain", "damage"], brawlRating: "C", desc: "Bonus damage/lifesteal vs NPCs" },
   { id: "rapid_rounds", name: "Rapid Rounds", cat: "weapon", tier: 1, active: false, tags: ["fire_rate", "damage"], brawlRating: "A", desc: "+9% Fire Rate" },
   { id: "restorative_shot", name: "Restorative Shot", cat: "weapon", tier: 1, active: false, tags: ["sustain", "damage"], brawlRating: "B", desc: "Heal on hero hit" },
@@ -61,18 +61,18 @@ export const ITEMS = [
   { id: "active_reload", name: "Active Reload", cat: "weapon", tier: 2, active: false, tags: ["fire_rate", "burst", "damage"], brawlRating: "A", desc: "Bonus fire rate/damage after reload" },
   { id: "backstabber", name: "Backstabber", cat: "weapon", tier: 2, active: false, tags: ["burst", "damage", "close_range"], brawlRating: "B", desc: "Bonus damage from behind" },
   { id: "fleetfoot", name: "Fleetfoot", cat: "weapon", tier: 2, active: true, tags: ["mobility", "damage"], brawlRating: "A", desc: "Active: dash + fire rate boost" },
-  { id: "intensifying_mag", name: "Intensifying Magazine", cat: "weapon", tier: 2, active: false, tags: ["damage", "scaling", "fire_rate"], brawlRating: "B", desc: "Damage ramps during magazine" },
+  { id: "intensifying_mag", name: "Intensifying Magazine", cat: "weapon", tier: 2, active: false, tags: ["damage", "scaling", "fire_rate"], brawlRating: "B", desc: "Damage ramps during magazine", img: "intensifying_magazine" },
   { id: "kinetic_dash", name: "Kinetic Dash", cat: "weapon", tier: 2, active: false, tags: ["mobility", "damage"], brawlRating: "A", desc: "Bonus damage after dash" },
   { id: "long_range", name: "Long Range", cat: "weapon", tier: 2, active: false, tags: ["long_range", "damage"], brawlRating: "C", desc: "+18% Damage beyond 25m" },
   { id: "melee_charge", name: "Melee Charge", cat: "weapon", tier: 2, active: false, tags: ["melee", "burst", "damage"], brawlRating: "B", desc: "Bonus melee damage after sprint" },
   { id: "mystic_shot", name: "Mystic Shot", cat: "weapon", tier: 2, active: false, tags: ["spirit_power", "damage"], brawlRating: "A", desc: "Bullets apply spirit damage" },
   { id: "opening_rounds", name: "Opening Rounds", cat: "weapon", tier: 2, active: false, tags: ["burst", "damage"], brawlRating: "B", desc: "First bullets in magazine deal bonus" },
-  { id: "recharging_rush", name: "Recharging Rush", cat: "weapon", tier: 2, active: false, tags: ["mobility", "cooldown"], brawlRating: "B", desc: "Dash recharges faster" },
+  { id: "recharging_rush", name: "Recharging Rush", cat: "weapon", tier: 2, active: false, tags: ["mobility", "cooldown"], brawlRating: "B", desc: "Dash recharges faster", img: "recharging_rounds" },
   { id: "slowing_bullets", name: "Slowing Bullets", cat: "weapon", tier: 2, active: false, tags: ["utility", "damage"], brawlRating: "A", desc: "Bullets slow enemies" },
-  { id: "spirit_shredder", name: "Spirit Shredder Bullets", cat: "weapon", tier: 2, active: false, tags: ["utility", "damage", "spirit_power"], brawlRating: "B", desc: "Reduces enemy spirit resist" },
+  { id: "spirit_shredder", name: "Spirit Shredder Bullets", cat: "weapon", tier: 2, active: false, tags: ["utility", "damage", "spirit_power"], brawlRating: "B", desc: "Reduces enemy spirit resist", img: "spirit_shredder_bullets" },
   { id: "split_shot", name: "Split Shot", cat: "weapon", tier: 2, active: true, tags: ["aoe", "damage"], brawlRating: "B", desc: "Bullets hit additional targets" },
   { id: "swift_striker", name: "Swift Striker", cat: "weapon", tier: 2, active: false, tags: ["fire_rate", "damage"], brawlRating: "A", desc: "+22% Fire Rate" },
-  { id: "titanic_mag", name: "Titanic Magazine", cat: "weapon", tier: 2, active: false, tags: ["damage", "tankiness"], brawlRating: "B", desc: "Bonus damage from max HP" },
+  { id: "titanic_mag", name: "Titanic Magazine", cat: "weapon", tier: 2, active: false, tags: ["damage", "tankiness"], brawlRating: "B", desc: "Bonus damage from max HP", img: "titanic_magazine" },
   { id: "weakening_headshot", name: "Weakening Headshot", cat: "weapon", tier: 2, active: false, tags: ["burst", "utility"], brawlRating: "B", desc: "Headshots reduce enemy damage" },
 
   // ---- WEAPON T3 (3200) ----
@@ -89,14 +89,14 @@ export const ITEMS = [
   { id: "hollow_point", name: "Hollow Point", cat: "weapon", tier: 3, active: false, tags: ["burst", "damage"], brawlRating: "A", desc: "Bonus damage to high-HP targets" },
   { id: "hunters_aura", name: "Hunter's Aura", cat: "weapon", tier: 3, active: false, tags: ["aoe", "utility", "damage"], brawlRating: "S", desc: "Reduce nearby enemy armor" },
   { id: "point_blank", name: "Point Blank", cat: "weapon", tier: 3, active: false, tags: ["close_range", "burst", "damage"], brawlRating: "A", desc: "+45% damage within 14m" },
-  { id: "sharpshooter", name: "Sharpshooter", cat: "weapon", tier: 3, active: false, tags: ["long_range", "damage"], brawlRating: "B", desc: "Bonus at range, stacking accuracy" },
+  { id: "sharpshooter", name: "Sharpshooter", cat: "weapon", tier: 3, active: false, tags: ["long_range", "damage"], brawlRating: "B", desc: "Bonus at range, stacking accuracy", img: "sharp_shooter" },
   { id: "spirit_rend", name: "Spirit Rend", cat: "weapon", tier: 3, active: false, tags: ["spirit_power", "damage", "burst"], brawlRating: "A", desc: "Headshots deal bonus spirit damage" },
   { id: "tesla_bullets", name: "Tesla Bullets", cat: "weapon", tier: 3, active: false, tags: ["aoe", "damage"], brawlRating: "S", desc: "Bullets chain to nearby enemies" },
   { id: "toxic_bullets", name: "Toxic Bullets", cat: "weapon", tier: 3, active: false, tags: ["damage", "utility", "sustain"], brawlRating: "A", desc: "Bullets apply anti-heal + DPS" },
   { id: "weighted_shots", name: "Weighted Shots", cat: "weapon", tier: 3, active: false, tags: ["burst", "utility", "damage"], brawlRating: "B", desc: "Shots slow and deal bonus" },
 
   // ---- WEAPON T4 (6400) ----
-  { id: "armor_piercing", name: "Armor Piercing Rounds", cat: "weapon", tier: 4, active: false, tags: ["damage", "burst"], brawlRating: "A", desc: "Ignore % bullet resist" },
+  { id: "armor_piercing", name: "Armor Piercing Rounds", cat: "weapon", tier: 4, active: false, tags: ["damage", "burst"], brawlRating: "A", desc: "Ignore % bullet resist", img: "armor_piercing_rounds" },
   { id: "capacitor", name: "Capacitor", cat: "weapon", tier: 4, active: true, tags: ["aoe", "burst", "spirit_power"], brawlRating: "A", desc: "Active: AoE spirit damage burst" },
   { id: "crippling_headshot", name: "Crippling Headshot", cat: "weapon", tier: 4, active: false, tags: ["burst", "utility", "damage"], brawlRating: "S", desc: "Headshots massively slow + reduce" },
   { id: "crushing_fists", name: "Crushing Fists", cat: "weapon", tier: 4, active: false, tags: ["melee", "burst", "damage"], brawlRating: "A", desc: "Massive melee damage boost" },
@@ -106,13 +106,13 @@ export const ITEMS = [
   { id: "ricochet", name: "Ricochet", cat: "weapon", tier: 4, active: false, tags: ["aoe", "damage"], brawlRating: "S", desc: "Bullets bounce to nearby targets" },
   { id: "shadow_weave", name: "Shadow Weave", cat: "weapon", tier: 4, active: true, tags: ["mobility", "burst", "damage"], brawlRating: "A", desc: "Active: invis + bonus damage" },
   { id: "silencer", name: "Silencer", cat: "weapon", tier: 4, active: false, tags: ["utility", "burst", "damage"], brawlRating: "S", desc: "Bullets silence on hit" },
-  { id: "spellslinger", name: "Spellslinger", cat: "weapon", tier: 4, active: false, tags: ["spirit_power", "damage"], brawlRating: "A", desc: "Gun damage boosts spirit and vice versa" },
+  { id: "spellslinger", name: "Spellslinger", cat: "weapon", tier: 4, active: false, tags: ["spirit_power", "damage"], brawlRating: "A", desc: "Gun damage boosts spirit and vice versa", img: "spell_slinger" },
   { id: "spiritual_overflow", name: "Spiritual Overflow", cat: "weapon", tier: 4, active: false, tags: ["spirit_power", "damage", "burst"], brawlRating: "A", desc: "Spirit power scales weapon damage" },
 
   // ---- WEAPON LEGENDARY (Street Brawl) ----
-  { id: "haunting_shot", name: "Haunting Shot", cat: "weapon", tier: 5, active: false, tags: ["burst", "spirit_power", "utility", "aoe"], brawlRating: "S", desc: "Bullet deals spirit dmg based on enemy HP, pierces, reduces healing/speed/damage", legendary: true },
-  { id: "infinite_rounds", name: "Infinite Rounds", cat: "weapon", tier: 5, active: false, tags: ["damage", "fire_rate", "burst"], brawlRating: "S", desc: "Chance for unavoidable piercing bullets, infinite ammo", legendary: true },
-  { id: "runed_gauntlets", name: "Runed Gauntlets", cat: "weapon", tier: 5, active: false, tags: ["melee", "cooldown", "burst"], brawlRating: "S", desc: "Melee pierces parry, heavy melee reduces cooldowns", legendary: true },
+  { id: "haunting_shot", name: "Haunting Shot", cat: "weapon", tier: 5, active: false, tags: ["burst", "spirit_power", "utility", "aoe"], brawlRating: "S", desc: "Bullet deals spirit dmg based on enemy HP, pierces, reduces healing/speed/damage", legendary: true, imgCat: "brawl", img: "haunting_scream" },
+  { id: "infinite_rounds", name: "Infinite Rounds", cat: "weapon", tier: 5, active: false, tags: ["damage", "fire_rate", "burst"], brawlRating: "S", desc: "Chance for unavoidable piercing bullets, infinite ammo", legendary: true, imgCat: "brawl" },
+  { id: "runed_gauntlets", name: "Runed Gauntlets", cat: "weapon", tier: 5, active: false, tags: ["melee", "cooldown", "burst"], brawlRating: "S", desc: "Melee pierces parry, heavy melee reduces cooldowns", legendary: true, imgCat: "brawl" },
 
   // ---- VITALITY T1 (800) ----
   { id: "extra_health", name: "Extra Health", cat: "vitality", tier: 1, active: false, tags: ["tankiness"], brawlRating: "B", desc: "+125 Bonus Health" },
@@ -168,19 +168,19 @@ export const ITEMS = [
   { id: "unstoppable", name: "Unstoppable", cat: "vitality", tier: 4, active: true, tags: ["utility", "tankiness"], brawlRating: "S", desc: "Active: immune to CC" },
 
   // ---- VITALITY LEGENDARY (Street Brawl) ----
-  { id: "celestial_blessing", name: "Celestial Blessing", cat: "vitality", tier: 5, active: true, tags: ["sustain", "utility", "aoe", "mobility"], brawlRating: "S", desc: "Cleanse + heal + stamina + speed for whole team", legendary: true },
+  { id: "celestial_blessing", name: "Celestial Blessing", cat: "vitality", tier: 5, active: true, tags: ["sustain", "utility", "aoe", "mobility"], brawlRating: "S", desc: "Cleanse + heal + stamina + speed for whole team", legendary: true, imgCat: "brawl", img: "celestial_guidance" },
 
   // ---- SPIRIT T1 (800) ----
   { id: "ammo_scavenger", name: "Ammo Scavenger", cat: "spirit", tier: 1, active: false, tags: ["sustain", "damage"], brawlRating: "C", desc: "Ammo on soul pickup" },
   { id: "extra_charge", name: "Extra Charge", cat: "spirit", tier: 1, active: false, tags: ["cooldown", "utility"], brawlRating: "A", desc: "+1 Ability Charge" },
   { id: "extra_spirit", name: "Extra Spirit", cat: "spirit", tier: 1, active: false, tags: ["spirit_power"], brawlRating: "B", desc: "+8 Spirit Power" },
-  { id: "infuser", name: "Infuser", cat: "spirit", tier: 1, active: false, tags: ["spirit_power", "cooldown"], brawlRating: "B", desc: "+8 Spirit Power, -6% Cooldown" },
+  { id: "infuser", name: "Infuser", cat: "spirit", tier: 1, active: false, tags: ["spirit_power", "cooldown"], brawlRating: "B", desc: "+8 Spirit Power, -6% Cooldown", imgCat: "vitality" },
   { id: "mystic_burst", name: "Mystic Burst", cat: "spirit", tier: 1, active: false, tags: ["burst", "spirit_power"], brawlRating: "A", desc: "Abilities deal bonus burst" },
   { id: "spirit_strike", name: "Spirit Strike", cat: "spirit", tier: 1, active: false, tags: ["melee", "spirit_power"], brawlRating: "B", desc: "Melee applies spirit damage" },
   { id: "withering_whip", name: "Withering Whip", cat: "spirit", tier: 1, active: false, tags: ["utility", "damage"], brawlRating: "A", desc: "Ability hit reduces enemy fire rate" },
 
   // ---- SPIRIT T2 (1600) ----
-  { id: "bullet_resist_shred", name: "Bullet Resist Shredder", cat: "spirit", tier: 2, active: false, tags: ["utility", "damage"], brawlRating: "A", desc: "Abilities reduce bullet resist" },
+  { id: "bullet_resist_shred", name: "Bullet Resist Shredder", cat: "spirit", tier: 2, active: false, tags: ["utility", "damage"], brawlRating: "A", desc: "Abilities reduce bullet resist", img: "bullet_resist_shredder" },
   { id: "cold_front", name: "Cold Front", cat: "spirit", tier: 2, active: false, tags: ["aoe", "utility", "spirit_power"], brawlRating: "A", desc: "Abilities slow enemies" },
   { id: "decay", name: "Decay", cat: "spirit", tier: 2, active: false, tags: ["utility", "damage", "spirit_power"], brawlRating: "A", desc: "Abilities reduce enemy healing" },
   { id: "duration_extender", name: "Duration Extender", cat: "spirit", tier: 2, active: false, tags: ["utility", "spirit_power"], brawlRating: "A", desc: "+18% Ability Duration" },
@@ -199,7 +199,7 @@ export const ITEMS = [
   { id: "improved_spirit", name: "Improved Spirit", cat: "spirit", tier: 3, active: false, tags: ["spirit_power"], brawlRating: "A", desc: "+25 Spirit Power" },
   { id: "knockdown", name: "Knockdown", cat: "spirit", tier: 3, active: true, tags: ["utility", "aoe"], brawlRating: "A", desc: "Active: AoE stun" },
   { id: "mystic_reverb", name: "Mystic Reverb", cat: "spirit", tier: 3, active: false, tags: ["burst", "spirit_power", "aoe"], brawlRating: "A", desc: "Abilities echo for bonus damage" },
-  { id: "mystic_vuln", name: "Mystic Vulnerability", cat: "spirit", tier: 3, active: false, tags: ["utility", "damage", "spirit_power"], brawlRating: "A", desc: "Abilities amplify spirit damage taken" },
+  { id: "mystic_vuln", name: "Mystic Vulnerability", cat: "spirit", tier: 3, active: false, tags: ["utility", "damage", "spirit_power"], brawlRating: "A", desc: "Abilities amplify spirit damage taken", img: "mystic_vulnerability" },
   { id: "rapid_recharge", name: "Rapid Recharge", cat: "spirit", tier: 3, active: false, tags: ["cooldown"], brawlRating: "A", desc: "-20% Cooldowns" },
   { id: "silence_glyph", name: "Silence Glyph", cat: "spirit", tier: 3, active: false, tags: ["utility", "burst"], brawlRating: "S", desc: "Abilities silence on hit" },
   { id: "superior_cooldown", name: "Superior Cooldown", cat: "spirit", tier: 3, active: false, tags: ["cooldown"], brawlRating: "A", desc: "-24% Cooldowns" },

@@ -1,10 +1,22 @@
-import { Swords, Shield, Sparkles, Crown, Check } from "lucide-react";
+import { useState } from "react";
+import { Swords, Shield, Sparkles, Crown, Check, Zap } from "lucide-react";
 import { getItemRating, getItemScore, CAT_COLORS, CAT_LABELS, RATING_COLORS, TIER_NAMES } from "./scoring.js";
 
 // ============================================================
 // FONT
 // ============================================================
 export const FONT_URL = "https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Barlow:wght@300;400;500;600;700&display=swap";
+
+// ============================================================
+// CDN IMAGE HELPER
+// ============================================================
+const CDN_BASE = "https://assets-bucket.deadlock-api.com/assets-api-res/images/items";
+
+export function getItemImageUrl(item) {
+  const slug = item.img || item.id;
+  const cat = item.imgCat || item.cat;
+  return `${CDN_BASE}/${cat}/${slug}.webp`;
+}
 
 // ============================================================
 // STYLES (embedded for artifact)
@@ -134,80 +146,245 @@ export function CatIcon({ cat, size = 16 }) {
   return <Sparkles size={size} color={color} />;
 }
 
-export function ItemCard({ item, hero, round, onClick, selected, recommended, compact, currentBuild }) {
+// Item image with fallback to category icon
+function ItemImage({ item, size = 48 }) {
+  const [failed, setFailed] = useState(false);
+  const color = CAT_COLORS[item.cat];
+
+  if (failed) {
+    return (
+      <div style={{
+        width: size, height: size, borderRadius: "50%",
+        background: `${color}15`, border: `2px solid ${color}44`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        <CatIcon cat={item.cat} size={size * 0.5} />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      border: `2px solid ${color}66`,
+      background: `radial-gradient(circle, ${color}15 0%, ${color}05 70%, transparent 100%)`,
+      overflow: "hidden", flexShrink: 0,
+      boxShadow: `0 0 12px ${color}22`,
+    }}>
+      <img
+        src={getItemImageUrl(item)}
+        alt={item.name}
+        width={size}
+        height={size}
+        style={{ display: "block", objectFit: "cover" }}
+        onError={() => setFailed(true)}
+        loading="lazy"
+      />
+    </div>
+  );
+}
+
+// Rarity label: RARE (T4 in round 1-2), ENHANCED, LEGENDARY
+function RarityLabel({ item, round }) {
+  const isRare = item.tier === 4 && round && round <= 2;
+  const isLegendary = item.tier === 5 || item.legendary;
+  const isEnhanced = item.enhanced;
+
+  if (!isRare && !isLegendary && !isEnhanced) return null;
+
+  let label, color, bg, borderColor;
+  if (isLegendary) {
+    label = "LEGENDARY";
+    color = "#e8a535";
+    bg = "rgba(232,165,53,0.18)";
+    borderColor = "rgba(232,165,53,0.5)";
+  } else if (isRare) {
+    label = "RARE!";
+    color = "#4ade80";
+    bg = "rgba(74,222,128,0.15)";
+    borderColor = "rgba(74,222,128,0.4)";
+  } else {
+    label = "ENHANCED";
+    color = "#ffd700";
+    bg = "rgba(255,215,0,0.12)";
+    borderColor = "rgba(255,215,0,0.3)";
+  }
+
+  return (
+    <span style={{
+      fontFamily: "'Rajdhani', sans-serif",
+      fontSize: "10px", fontWeight: 700, color,
+      background: bg, border: `1px solid ${borderColor}`,
+      borderRadius: "3px", padding: "1px 6px",
+      textTransform: "uppercase", letterSpacing: "1px",
+      display: "inline-flex", alignItems: "center", gap: "3px",
+    }}>
+      {isLegendary && <Crown size={9} />}
+      {isEnhanced && !isLegendary && <Zap size={9} />}
+      {label}
+    </span>
+  );
+}
+
+// Tooltip shown on hover
+function ItemTooltip({ item, hero, round }) {
   const rating = getItemRating(item, hero);
+  const isRare = item.tier === 4 && round && round <= 2;
+  const color = CAT_COLORS[item.cat];
+
+  return (
+    <div style={{
+      position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
+      transform: "translateX(-50%)", zIndex: 1000,
+      background: "rgba(12,14,18,0.97)", border: `1px solid ${color}44`,
+      borderRadius: "8px", padding: "12px 14px",
+      boxShadow: `0 4px 20px rgba(0,0,0,0.6), 0 0 15px ${color}15`,
+      minWidth: "220px", maxWidth: "280px",
+      pointerEvents: "none",
+    }}>
+      {/* Arrow */}
+      <div style={{
+        position: "absolute", bottom: "-6px", left: "50%", transform: "translateX(-50%) rotate(45deg)",
+        width: "10px", height: "10px", background: "rgba(12,14,18,0.97)",
+        border: `1px solid ${color}44`, borderTop: "none", borderLeft: "none",
+      }} />
+
+      {/* Header: icon + name + rating */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+        <ItemImage item={item} size={36} />
+        <div style={{ flex: 1 }}>
+          <div style={{
+            fontFamily: "'Rajdhani', sans-serif", fontWeight: 700,
+            fontSize: "15px", color: "#fff", lineHeight: 1.2,
+          }}>{item.name}</div>
+          <div style={{ display: "flex", gap: "4px", alignItems: "center", marginTop: "2px", flexWrap: "wrap" }}>
+            <span style={styles.catBadge(item.cat)}>{CAT_LABELS[item.cat]}</span>
+            <span style={styles.tierBadge(item.tier)}>
+              {item.tier === 5 ? "Legendary" : TIER_NAMES[item.tier]}
+            </span>
+          </div>
+        </div>
+        <span style={styles.ratingBadge(rating)}>{rating}</span>
+      </div>
+
+      {/* Rarity + Active badges */}
+      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "6px" }}>
+        <RarityLabel item={item} round={round} />
+        {item.active && (
+          <span style={{
+            fontSize: "10px", fontWeight: 600, color: "#4a90d9",
+            background: "rgba(74,144,217,0.12)", border: "1px solid rgba(74,144,217,0.3)",
+            borderRadius: "3px", padding: "1px 5px", textTransform: "uppercase",
+          }}>Active</span>
+        )}
+      </div>
+
+      {/* Description */}
+      {item.desc && (
+        <p style={{
+          margin: 0, fontSize: "12px", color: "#aaa", lineHeight: 1.4,
+          borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "6px",
+        }}>
+          {item.desc}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function ItemCard({ item, hero, round, onClick, selected, recommended, compact, currentBuild }) {
+  const [hovered, setHovered] = useState(false);
+  const rating = getItemRating(item, hero);
+  const isRare = item.tier === 4 && round && round <= 2;
+  const isLegendary = item.tier === 5 || item.legendary;
+  const color = CAT_COLORS[item.cat];
+  const iconSize = compact ? 32 : 48;
+
   return (
     <div
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         ...styles.glowCard(
-          recommended ? "#e8a535" : selected ? "#4a90d9" : CAT_COLORS[item.cat]
+          recommended ? "#e8a535" : selected ? "#4a90d9" : color
         ),
         cursor: onClick ? "pointer" : "default",
         border: recommended
           ? "2px solid #e8a535"
           : selected
           ? "2px solid #4a90d9"
-          : `1px solid ${CAT_COLORS[item.cat]}22`,
+          : isLegendary
+          ? "1px solid rgba(232,165,53,0.35)"
+          : isRare
+          ? "1px solid rgba(74,222,128,0.3)"
+          : `1px solid ${color}22`,
         padding: compact ? "8px 10px" : "12px",
         position: "relative",
-        overflow: "hidden",
+        overflow: "visible",
+        transform: selected ? "scale(1.02)" : "none",
       }}
     >
-      {item.legendary && (
-        <div style={{
-          position: "absolute", top: 0, right: 0,
-          background: "linear-gradient(135deg, transparent 50%, rgba(232,165,53,0.3) 50%)",
-          width: "32px", height: "32px",
-        }}>
-          <Crown size={10} color="#e8a535" style={{ position: "absolute", top: "4px", right: "4px" }} />
-        </div>
-      )}
+      {/* Tooltip on hover */}
+      {hovered && !compact && <ItemTooltip item={item} hero={hero} round={round} />}
+
+      {/* Recommended check */}
       {recommended && (
         <div style={{
           position: "absolute", top: "4px", right: "4px",
           background: "#e8a535", borderRadius: "50%", width: "20px", height: "20px",
-          display: "flex", alignItems: "center", justifyContent: "center",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2,
         }}>
           <Check size={12} color="#0a0b0f" strokeWidth={3} />
         </div>
       )}
-      {item.enhanced && (
-        <div style={{
-          position: "absolute", top: item.legendary ? "4px" : "4px", left: "4px",
-          fontSize: "10px", fontWeight: 700, color: "#ffd700",
-          background: "rgba(255,215,0,0.12)", border: "1px solid rgba(255,215,0,0.3)",
-          borderRadius: "3px", padding: "1px 5px", textTransform: "uppercase",
-        }}>Enhanced</div>
-      )}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: compact ? "2px" : "6px" }}>
-        <CatIcon cat={item.cat} size={compact ? 14 : 16} />
-        <span style={{
-          fontFamily: "'Rajdhani', sans-serif", fontWeight: 600,
-          fontSize: compact ? "13px" : "15px", color: "#fff",
-          flex: 1, lineHeight: 1.2,
-        }}>
-          {item.name}
-        </span>
-        <span style={styles.ratingBadge(rating)}>{rating}</span>
-      </div>
-      {!compact && (
-        <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
-          <span style={styles.catBadge(item.cat)}>{CAT_LABELS[item.cat]}</span>
-          <span style={styles.tierBadge(item.tier)}>
-            {item.tier === 5 ? "Legendary" : `T${TIER_NAMES[item.tier]}`}
-          </span>
-          {item.active && (
+
+      {/* Main content row: icon + info */}
+      <div style={{ display: "flex", alignItems: "center", gap: compact ? "8px" : "10px" }}>
+        <ItemImage item={item} size={iconSize} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Name + Rating row */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: compact ? "0" : "4px" }}>
             <span style={{
-              fontSize: "10px", fontWeight: 600, color: "#4a90d9",
-              background: "rgba(74,144,217,0.12)", border: "1px solid rgba(74,144,217,0.3)",
-              borderRadius: "3px", padding: "1px 5px", textTransform: "uppercase",
-            }}>Active</span>
+              fontFamily: "'Rajdhani', sans-serif", fontWeight: 600,
+              fontSize: compact ? "13px" : "15px", color: "#fff",
+              flex: 1, lineHeight: 1.2,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {item.name}
+            </span>
+            <span style={styles.ratingBadge(rating)}>{rating}</span>
+          </div>
+
+          {/* Badges row */}
+          {!compact && (
+            <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap" }}>
+              <span style={styles.catBadge(item.cat)}>{CAT_LABELS[item.cat]}</span>
+              <span style={styles.tierBadge(item.tier)}>
+                {item.tier === 5 ? "Legendary" : TIER_NAMES[item.tier]}
+              </span>
+              {item.active && (
+                <span style={{
+                  fontSize: "10px", fontWeight: 600, color: "#4a90d9",
+                  background: "rgba(74,144,217,0.12)", border: "1px solid rgba(74,144,217,0.3)",
+                  borderRadius: "3px", padding: "1px 5px", textTransform: "uppercase",
+                }}>Active</span>
+              )}
+              <RarityLabel item={item} round={round} />
+            </div>
+          )}
+
+          {/* Compact: just show rarity inline */}
+          {compact && (isLegendary || isRare || item.enhanced) && (
+            <RarityLabel item={item} round={round} />
           )}
         </div>
-      )}
+      </div>
+
+      {/* Description (non-compact only, shown inline below) */}
       {!compact && item.desc && (
-        <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#888", lineHeight: 1.3 }}>
+        <p style={{ margin: "6px 0 0 0", fontSize: "12px", color: "#888", lineHeight: 1.3, paddingLeft: `${iconSize + 10}px` }}>
           {item.desc}
         </p>
       )}
