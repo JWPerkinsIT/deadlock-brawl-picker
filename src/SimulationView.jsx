@@ -15,6 +15,36 @@ const ROUND_INFO = {
   5: { abilityPoints: 5, boons: 34 },
 };
 
+// Tier weights for each pick within a round (pick 1 = lower, pick 2 = mid, pick 3 = best)
+// These are per-pick weights that escalate within each round
+const PICK_TIER_WEIGHTS = {
+  1: { // Round 1
+    1: { 1: 0.75, 2: 0.20, 3: 0.05, 4: 0, 5: 0 },      // Pick 1: mostly T1
+    2: { 1: 0.45, 2: 0.40, 3: 0.15, 4: 0, 5: 0 },      // Pick 2: T1-T2
+    3: { 1: 0.25, 2: 0.45, 3: 0.25, 4: 0.05, 5: 0 },   // Pick 3: T2 heavy
+  },
+  2: { // Round 2
+    1: { 1: 0.45, 2: 0.40, 3: 0.15, 4: 0, 5: 0 },
+    2: { 1: 0.20, 2: 0.40, 3: 0.30, 4: 0.10, 5: 0 },
+    3: { 1: 0.10, 2: 0.25, 3: 0.40, 4: 0.25, 5: 0 },
+  },
+  3: { // Round 3
+    1: { 1: 0.20, 2: 0.40, 3: 0.30, 4: 0.10, 5: 0 },
+    2: { 1: 0.08, 2: 0.25, 3: 0.40, 4: 0.25, 5: 0.02 },  // 2% legendary chance
+    3: { 1: 0.05, 2: 0.15, 3: 0.35, 4: 0.40, 5: 0.05 },  // slight legendary chance
+  },
+  4: { // Round 4
+    1: { 1: 0.10, 2: 0.25, 3: 0.40, 4: 0.25, 5: 0 },
+    2: { 1: 0.05, 2: 0.15, 3: 0.35, 4: 0.35, 5: 0.10 },
+    3: { 1: 0, 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.20 },
+  },
+  5: { // Round 5
+    1: { 1: 0.05, 2: 0.15, 3: 0.35, 4: 0.35, 5: 0.10 },
+    2: { 1: 0, 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.20 },
+    3: { 1: 0, 2: 0.05, 3: 0.20, 4: 0.45, 5: 0.30 },
+  },
+};
+
 // ============================================================
 // UTILITY FUNCTIONS
 // ============================================================
@@ -28,55 +58,59 @@ function rollTier(weights) {
   return 3;
 }
 
-function generateItemOfferings(round, hero, existingBuildIds = new Set()) {
-  const weights = ROUND_TIER_WEIGHTS[round];
-  const usedIds = new Set(existingBuildIds);
-  const groups = [];
+function generateSinglePick(round, pickNumber, hero, usedIds) {
+  const weights = PICK_TIER_WEIGHTS[round]?.[pickNumber] || ROUND_TIER_WEIGHTS[round];
+  const items = [];
 
-  for (let g = 0; g < 3; g++) {
-    const group = [];
-    for (let s = 0; s < 3; s++) {
-      let tier = rollTier(weights);
+  for (let s = 0; s < 3; s++) {
+    let tier = rollTier(weights);
 
-      // Get candidates for this tier
-      let candidates = ITEMS.filter((item) => item.tier === tier && !usedIds.has(item.id));
+    let candidates = ITEMS.filter((item) => item.tier === tier && !usedIds.has(item.id));
 
-      // Fallback to adjacent tiers if no items available
-      if (candidates.length === 0) {
-        for (let offset = 1; offset <= 3; offset++) {
-          candidates = ITEMS.filter((item) =>
-            (item.tier === tier + offset || item.tier === tier - offset) &&
-            item.tier >= 1 && item.tier <= 5 && !usedIds.has(item.id)
-          );
-          if (candidates.length > 0) break;
-        }
-      }
-      if (candidates.length === 0) continue;
-
-      // 30% chance to bias toward hero-synergistic items
-      let picked;
-      if (hero && Math.random() < 0.3) {
-        const synergistic = candidates.filter((item) =>
-          item.tags.some((t) => hero.tags.includes(t))
+    // Fallback to adjacent tiers
+    if (candidates.length === 0) {
+      for (let offset = 1; offset <= 3; offset++) {
+        candidates = ITEMS.filter((item) =>
+          (item.tier === tier + offset || item.tier === tier - offset) &&
+          item.tier >= 1 && item.tier <= 5 && !usedIds.has(item.id)
         );
-        if (synergistic.length > 0) {
-          picked = synergistic[Math.floor(Math.random() * synergistic.length)];
-        }
+        if (candidates.length > 0) break;
       }
-      if (!picked) {
-        picked = candidates[Math.floor(Math.random() * candidates.length)];
-      }
-
-      // ~10% chance for enhanced
-      const enhanced = Math.random() < 0.1;
-      const finalItem = enhanced ? { ...picked, enhanced: true } : { ...picked };
-
-      usedIds.add(picked.id);
-      group.push(finalItem);
     }
-    groups.push(group);
+    if (candidates.length === 0) continue;
+
+    // 30% chance to bias toward hero-synergistic items
+    let picked;
+    if (hero && Math.random() < 0.3) {
+      const synergistic = candidates.filter((item) =>
+        item.tags.some((t) => hero.tags.includes(t))
+      );
+      if (synergistic.length > 0) {
+        picked = synergistic[Math.floor(Math.random() * synergistic.length)];
+      }
+    }
+    if (!picked) {
+      picked = candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    // ~10% chance for enhanced
+    const enhanced = Math.random() < 0.1;
+    const finalItem = enhanced ? { ...picked, enhanced: true } : { ...picked };
+
+    usedIds.add(picked.id);
+    items.push(finalItem);
   }
-  return groups;
+  return items;
+}
+
+// Generate all 3 picks for a round (used by AI and for scoring comparison)
+function generateAllPicksForRound(round, hero, existingBuildIds = new Set()) {
+  const usedIds = new Set(existingBuildIds);
+  const picks = [];
+  for (let p = 1; p <= 3; p++) {
+    picks.push(generateSinglePick(round, p, hero, usedIds));
+  }
+  return picks;
 }
 
 function getAIBestPick(group, hero, round, currentBuild) {
@@ -120,7 +154,6 @@ function HeroChip({ hero, isPlayer, compact }) {
 function TeamLineup({ teams, playerHero, allBuilds }) {
   return (
     <div style={{ ...styles.card, padding: "10px", marginBottom: "12px" }}>
-      {/* Your Team */}
       <div style={{ marginBottom: "8px" }}>
         <div style={{
           fontFamily: "'Rajdhani', sans-serif", fontSize: "11px", fontWeight: 700,
@@ -144,7 +177,6 @@ function TeamLineup({ teams, playerHero, allBuilds }) {
           ))}
         </div>
       </div>
-      {/* Enemy Team */}
       <div>
         <div style={{
           fontFamily: "'Rajdhani', sans-serif", fontSize: "11px", fontWeight: 700,
@@ -172,105 +204,6 @@ function TeamLineup({ teams, playerHero, allBuilds }) {
   );
 }
 
-function OfferingGroup({ group, groupIndex, selectedIndex, onSelect }) {
-  return (
-    <div style={{
-      ...styles.card, padding: "8px",
-      border: selectedIndex !== null
-        ? "1px solid rgba(232,165,53,0.3)"
-        : "1px solid rgba(255,255,255,0.06)",
-    }}>
-      <div style={{
-        fontFamily: "'Rajdhani', sans-serif", fontSize: "11px", fontWeight: 700,
-        color: selectedIndex !== null ? "#e8a535" : "#666",
-        textTransform: "uppercase", letterSpacing: "1px", marginBottom: "6px",
-        textAlign: "center",
-      }}>
-        Group {groupIndex + 1}
-        {selectedIndex !== null && <Check size={10} color="#e8a535" style={{ marginLeft: "4px" }} />}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        {group.map((item, itemIndex) => {
-          const isSelected = selectedIndex === itemIndex;
-          return (
-            <div
-              key={`${item.id}-${itemIndex}`}
-              onClick={() => onSelect(groupIndex, itemIndex)}
-              style={{
-                cursor: "pointer",
-                border: isSelected ? "2px solid #e8a535" : "1px solid rgba(255,255,255,0.06)",
-                borderRadius: "8px",
-                padding: isSelected ? "11px" : "12px",
-                background: isSelected
-                  ? "rgba(232,165,53,0.08)"
-                  : "rgba(19,21,27,0.95)",
-                position: "relative",
-                overflow: "hidden",
-                transition: "all 0.15s ease",
-              }}
-            >
-              {isSelected && (
-                <div style={{
-                  position: "absolute", top: "4px", right: "4px",
-                  background: "#e8a535", borderRadius: "50%", width: "18px", height: "18px",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <Check size={10} color="#0a0b0f" strokeWidth={3} />
-                </div>
-              )}
-              {item.legendary && (
-                <div style={{
-                  position: "absolute", top: 0, right: isSelected ? "24px" : 0,
-                  background: "linear-gradient(135deg, transparent 50%, rgba(232,165,53,0.3) 50%)",
-                  width: "28px", height: "28px",
-                }}>
-                  <Crown size={9} color="#e8a535" style={{ position: "absolute", top: "3px", right: "3px" }} />
-                </div>
-              )}
-              {item.enhanced && (
-                <div style={{
-                  position: "absolute", top: "4px", left: "4px",
-                  fontSize: "9px", fontWeight: 700, color: "#ffd700",
-                  background: "rgba(255,215,0,0.12)", border: "1px solid rgba(255,215,0,0.3)",
-                  borderRadius: "3px", padding: "1px 4px", textTransform: "uppercase",
-                }}>Enhanced</div>
-              )}
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", marginTop: item.enhanced ? "16px" : "0" }}>
-                <CatIcon cat={item.cat} size={14} />
-                <span style={{
-                  fontFamily: "'Rajdhani', sans-serif", fontWeight: 600,
-                  fontSize: "14px", color: "#fff", flex: 1, lineHeight: 1.2,
-                }}>
-                  {item.name}
-                </span>
-                <span style={styles.ratingBadge(getItemRating(item, null))}>{getItemRating(item, null)}</span>
-              </div>
-              <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap" }}>
-                <span style={styles.catBadge(item.cat)}>{CAT_LABELS[item.cat]}</span>
-                <span style={styles.tierBadge(item.tier)}>
-                  {item.tier === 5 ? "Legendary" : `T${TIER_NAMES[item.tier]}`}
-                </span>
-                {item.active && (
-                  <span style={{
-                    fontSize: "9px", fontWeight: 600, color: "#4a90d9",
-                    background: "rgba(74,144,217,0.12)", border: "1px solid rgba(74,144,217,0.3)",
-                    borderRadius: "3px", padding: "1px 4px", textTransform: "uppercase",
-                  }}>Active</span>
-                )}
-              </div>
-              {item.desc && (
-                <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#777", lineHeight: 1.3 }}>
-                  {item.desc}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function RoundBreakdownRow({ data, playerHero }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -284,7 +217,6 @@ function RoundBreakdownRow({ data, playerHero }) {
           fontFamily: "'Rajdhani', sans-serif", fontSize: "14px", fontWeight: 700,
           color: "#e8a535", minWidth: "60px",
         }}>Round {data.round}</span>
-        {/* Score bar */}
         <div style={{ flex: 1, height: "8px", borderRadius: "4px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
           <div style={{
             height: "100%", borderRadius: "4px",
@@ -319,7 +251,7 @@ function RoundBreakdownRow({ data, playerHero }) {
                 borderRadius: "6px", padding: "8px",
               }}>
                 <div style={{ fontSize: "10px", fontWeight: 700, color: "#666", textTransform: "uppercase", marginBottom: "4px" }}>
-                  Group {gi + 1} {isMatch ? <Check size={10} color="#6dbf6a" /> : <X size={10} color="#ff4757" />}
+                  Pick {gi + 1} {isMatch ? <Check size={10} color="#6dbf6a" /> : <X size={10} color="#ff4757" />}
                 </div>
                 <div style={{ marginBottom: "4px" }}>
                   <div style={{ fontSize: "9px", color: "#e8a535", fontWeight: 600, textTransform: "uppercase" }}>Your Pick</div>
@@ -369,7 +301,6 @@ function SetupScreen({ onStart }) {
 
   return (
     <div style={{ position: "relative", zIndex: 1, padding: "12px 16px 24px", maxWidth: "900px", margin: "0 auto" }}>
-      {/* Mode Info */}
       <div style={{
         ...styles.card, marginBottom: "16px",
         border: "1px solid rgba(232,165,53,0.15)",
@@ -384,13 +315,14 @@ function SetupScreen({ onStart }) {
         </div>
         <p style={{ fontSize: "13px", color: "#aaa", margin: "0 0 8px", lineHeight: 1.5 }}>
           Practice your item picking in a simulated 4v4 Street Brawl. Pick a hero, get matched with random teams,
-          and choose items across 5 rounds. At the end, see how your picks compare to the AI's optimal choices.
+          and choose items across 5 rounds. Each round you make 3 picks — items get better with each pick.
+          At the end, see how your picks compare to the AI's optimal choices.
         </p>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           {[
             { label: "4v4 Teams", color: "#6dbf6a" },
             { label: "5 Rounds", color: "#e8a535" },
-            { label: "3 Items/Round", color: "#b87fd4" },
+            { label: "3 Picks/Round", color: "#b87fd4" },
             { label: "1 Reroll/Round", color: "#4a90d9" },
           ].map(({ label, color }) => (
             <span key={label} style={{
@@ -402,7 +334,6 @@ function SetupScreen({ onStart }) {
         </div>
       </div>
 
-      {/* Random Hero Toggle */}
       <div style={{ ...styles.card, padding: "12px", marginBottom: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
@@ -427,7 +358,6 @@ function SetupScreen({ onStart }) {
         </div>
       </div>
 
-      {/* Hero Selection Grid */}
       {!isRandom && (
         <div style={{ ...styles.card, padding: "12px", marginBottom: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
@@ -481,7 +411,6 @@ function SetupScreen({ onStart }) {
         </div>
       )}
 
-      {/* Start Button */}
       <button
         onClick={() => canStart && onStart(selectedHero, isRandom)}
         disabled={!canStart}
@@ -553,7 +482,6 @@ function ResultsScreen({ roundHistory, playerHero, teams, allBuilds, onPlayAgain
 
   return (
     <div style={{ position: "relative", zIndex: 1, padding: "12px 16px 24px", maxWidth: "900px", margin: "0 auto" }}>
-      {/* Grade Header */}
       <div style={{
         ...styles.card, marginBottom: "16px", textAlign: "center",
         border: `1px solid ${RATING_COLORS[results.grade]}33`,
@@ -581,7 +509,6 @@ function ResultsScreen({ roundHistory, playerHero, teams, allBuilds, onPlayAgain
         </div>
       </div>
 
-      {/* Score Bar */}
       <div style={{ ...styles.card, marginBottom: "12px", padding: "12px" }}>
         <div style={{
           fontFamily: "'Rajdhani', sans-serif", fontSize: "12px", fontWeight: 700,
@@ -601,7 +528,6 @@ function ResultsScreen({ roundHistory, playerHero, teams, allBuilds, onPlayAgain
         </div>
       </div>
 
-      {/* Round Breakdown */}
       <div style={{ marginBottom: "12px" }}>
         <div style={{
           fontFamily: "'Rajdhani', sans-serif", fontSize: "14px", fontWeight: 700,
@@ -612,13 +538,11 @@ function ResultsScreen({ roundHistory, playerHero, teams, allBuilds, onPlayAgain
         ))}
       </div>
 
-      {/* Final Build */}
       <div style={{ ...styles.card, marginBottom: "12px" }}>
         <div style={{
           fontFamily: "'Rajdhani', sans-serif", fontSize: "14px", fontWeight: 700,
           color: "#e8a535", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px",
         }}>Your Final Build ({playerBuild.length} items)</div>
-        {/* Category bar */}
         <div style={{ display: "flex", gap: "2px", height: "20px", borderRadius: "4px", overflow: "hidden", marginBottom: "8px" }}>
           {Object.entries(catCounts).map(([cat, count]) => (
             count > 0 && (
@@ -634,7 +558,6 @@ function ResultsScreen({ roundHistory, playerHero, teams, allBuilds, onPlayAgain
             )
           ))}
         </div>
-        {/* Items grouped by round */}
         {[1, 2, 3, 4, 5].map((r) => {
           const roundItems = playerBuild.slice((r - 1) * 3, r * 3);
           if (roundItems.length === 0) return null;
@@ -667,7 +590,6 @@ function ResultsScreen({ roundHistory, playerHero, teams, allBuilds, onPlayAgain
         })}
       </div>
 
-      {/* Team Builds Accordion */}
       <div style={{ ...styles.card, marginBottom: "16px" }}>
         <div
           onClick={() => setExpandedTeam(!expandedTeam)}
@@ -721,7 +643,6 @@ function ResultsScreen({ roundHistory, playerHero, teams, allBuilds, onPlayAgain
         )}
       </div>
 
-      {/* Action Buttons */}
       <div style={{ display: "flex", gap: "8px" }}>
         <button
           onClick={onPlayAgain}
@@ -749,10 +670,15 @@ export default function SimulationView() {
   const [isRandomHero, setIsRandomHero] = useState(false);
   const [teams, setTeams] = useState(null);
   const [currentRound, setCurrentRound] = useState(1);
-  const [roundPhase, setRoundPhase] = useState("offering"); // offering | summary
-  const [offerings, setOfferings] = useState(null);
-  const [playerPicks, setPlayerPicks] = useState([null, null, null]);
+  const [roundPhase, setRoundPhase] = useState("picking"); // picking | summary
+  // Sequential pick state
+  const [currentPickNumber, setCurrentPickNumber] = useState(1); // 1, 2, or 3
+  const [currentItems, setCurrentItems] = useState([]); // the 3 items to choose from
+  const [selectedItemIndex, setSelectedItemIndex] = useState(null);
   const [rerollsLeft, setRerollsLeft] = useState(1);
+  const [roundPicks, setRoundPicks] = useState([]); // items picked so far this round (0-2)
+  const [roundAllOfferings, setRoundAllOfferings] = useState([]); // all 3 sets of 3 items for AI comparison
+  const [usedIdsThisRound, setUsedIdsThisRound] = useState(new Set());
   const [allBuilds, setAllBuilds] = useState({});
   const [roundHistory, setRoundHistory] = useState([]);
   const [lastRoundSummary, setLastRoundSummary] = useState(null);
@@ -768,113 +694,141 @@ export default function SimulationView() {
     }
     setPlayerHero(hero);
 
-    // Build both teams
     const remaining = HEROES.filter((h) => h.id !== hero.id);
     const shuffled = [...remaining].sort(() => Math.random() - 0.5);
     const teammates = shuffled.slice(0, 3);
     const enemies = shuffled.slice(3, 7);
 
-    const newTeams = {
-      player: [hero, ...teammates],
-      enemy: enemies,
-    };
+    const newTeams = { player: [hero, ...teammates], enemy: enemies };
     setTeams(newTeams);
 
-    // Initialize empty builds
     const builds = {};
-    [hero, ...teammates, ...enemies].forEach((h) => {
-      builds[h.id] = [];
-    });
+    [hero, ...teammates, ...enemies].forEach((h) => { builds[h.id] = []; });
     setAllBuilds(builds);
 
-    // Set rerolls
     const rerolls = isRandom ? 2 : 1;
     setRerollsLeft(rerolls);
     setCurrentRound(1);
-    setRoundPhase("offering");
+    setRoundPhase("picking");
     setRoundHistory([]);
     setLastRoundSummary(null);
+    setRoundPicks([]);
+    setRoundAllOfferings([]);
 
-    // Generate offerings
-    const newOfferings = generateItemOfferings(1, hero, new Set());
-    setOfferings(newOfferings);
-    setPlayerPicks([null, null, null]);
+    // Generate first pick (pick 1 of round 1)
+    const usedIds = new Set();
+    const firstItems = generateSinglePick(1, 1, hero, usedIds);
+    setCurrentItems(firstItems);
+    setCurrentPickNumber(1);
+    setSelectedItemIndex(null);
+    setUsedIdsThisRound(usedIds);
     setPhase("playing");
   }, []);
 
-  // ---- ITEM SELECTION ----
-  const handleItemSelect = useCallback((groupIndex, itemIndex) => {
-    setPlayerPicks((prev) => {
-      const next = [...prev];
-      next[groupIndex] = next[groupIndex] === itemIndex ? null : itemIndex;
-      return next;
-    });
+  // ---- SELECT ITEM ----
+  const handleItemSelect = useCallback((itemIndex) => {
+    setSelectedItemIndex((prev) => prev === itemIndex ? null : itemIndex);
   }, []);
 
-  // ---- REROLL ----
+  // ---- REROLL current pick's items ----
   const handleReroll = useCallback(() => {
     if (rerollsLeft <= 0 || !playerHero) return;
     setRerollsLeft((prev) => prev - 1);
-    const existingIds = new Set((allBuilds[playerHero.id] || []).map((i) => i.id));
-    const newOfferings = generateItemOfferings(currentRound, playerHero, existingIds);
-    setOfferings(newOfferings);
-    setPlayerPicks([null, null, null]);
-  }, [rerollsLeft, playerHero, currentRound, allBuilds]);
 
-  // ---- LOCK IN ----
-  const handleLockIn = useCallback(() => {
-    if (!offerings || !playerHero || playerPicks.some((p) => p === null)) return;
+    // Regenerate the current pick's 3 items (remove old ones from used, add new ones)
+    const usedIds = new Set(usedIdsThisRound);
+    // Remove the current items from usedIds so they can potentially come back
+    currentItems.forEach((item) => usedIds.delete(item.id));
 
-    // Gather player's picks
-    const pickedItems = playerPicks.map((itemIdx, groupIdx) => offerings[groupIdx][itemIdx]);
+    const newItems = generateSinglePick(currentRound, currentPickNumber, playerHero, usedIds);
+    setCurrentItems(newItems);
+    setUsedIdsThisRound(usedIds);
+    setSelectedItemIndex(null);
+  }, [rerollsLeft, playerHero, currentRound, currentPickNumber, usedIdsThisRound, currentItems]);
 
-    // Determine AI optimal picks for scoring comparison
-    const aiOptimalPicks = offerings.map((group) => {
-      const best = getAIBestPick(group, playerHero, currentRound, allBuilds[playerHero.id] || []);
-      return best?.item || group[0];
-    });
+  // ---- CONFIRM PICK ----
+  const handleConfirmPick = useCallback(() => {
+    if (selectedItemIndex === null || !currentItems[selectedItemIndex]) return;
 
-    const playerScore = pickedItems.reduce(
-      (sum, item) => sum + getItemScore(item, playerHero, currentRound, allBuilds[playerHero.id] || []),
-      0
-    );
-    const aiScore = aiOptimalPicks.reduce(
-      (sum, item) => sum + getItemScore(item, playerHero, currentRound, allBuilds[playerHero.id] || []),
-      0
-    );
+    const pickedItem = currentItems[selectedItemIndex];
+    const newRoundPicks = [...roundPicks, pickedItem];
+    const newRoundOfferings = [...roundAllOfferings, currentItems];
 
-    // Update round history
-    const roundData = {
-      round: currentRound,
-      offerings,
-      playerPicks: pickedItems,
-      aiOptimalPicks,
-      playerScore,
-      aiScore,
-    };
-    setRoundHistory((prev) => [...prev, roundData]);
-    setLastRoundSummary(roundData);
+    if (currentPickNumber < 3) {
+      // Move to next pick
+      const nextPick = currentPickNumber + 1;
+      setRoundPicks(newRoundPicks);
+      setRoundAllOfferings(newRoundOfferings);
 
-    // Update builds
-    const newBuilds = { ...allBuilds };
-    newBuilds[playerHero.id] = [...(newBuilds[playerHero.id] || []), ...pickedItems];
+      const usedIds = new Set(usedIdsThisRound);
+      const nextItems = generateSinglePick(currentRound, nextPick, playerHero, usedIds);
+      setCurrentItems(nextItems);
+      setUsedIdsThisRound(usedIds);
+      setCurrentPickNumber(nextPick);
+      setSelectedItemIndex(null);
+    } else {
+      // All 3 picks done - finalize round
+      const allPickedItems = newRoundPicks;
+      const allOfferingSets = newRoundOfferings;
 
-    // AI auto-pick for teammates and enemies
-    const allOtherHeroes = [...(teams?.player.slice(1) || []), ...(teams?.enemy || [])];
-    allOtherHeroes.forEach((hero) => {
-      const heroBuild = newBuilds[hero.id] || [];
-      const existingIds = new Set(heroBuild.map((i) => i.id));
-      const heroOfferings = generateItemOfferings(currentRound, hero, existingIds);
-      const aiItems = heroOfferings.map((group) => {
-        const best = getAIBestPick(group, hero, currentRound, heroBuild);
-        return best?.item || group[0];
+      // Compute AI optimal picks from the same offerings
+      let aiBuildup = [...(allBuilds[playerHero.id] || [])];
+      const aiOptimalPicks = allOfferingSets.map((group) => {
+        const best = getAIBestPick(group, playerHero, currentRound, aiBuildup);
+        const pick = best?.item || group[0];
+        aiBuildup = [...aiBuildup, pick];
+        return pick;
       });
-      newBuilds[hero.id] = [...heroBuild, ...aiItems];
-    });
 
-    setAllBuilds(newBuilds);
-    setRoundPhase("summary");
-  }, [offerings, playerHero, playerPicks, currentRound, allBuilds, teams]);
+      let playerBuildup = [...(allBuilds[playerHero.id] || [])];
+      const playerScore = allPickedItems.reduce((sum, item) => {
+        const score = getItemScore(item, playerHero, currentRound, playerBuildup);
+        playerBuildup = [...playerBuildup, item];
+        return sum + score;
+      }, 0);
+
+      let aiBuildup2 = [...(allBuilds[playerHero.id] || [])];
+      const aiScore = aiOptimalPicks.reduce((sum, item) => {
+        const score = getItemScore(item, playerHero, currentRound, aiBuildup2);
+        aiBuildup2 = [...aiBuildup2, item];
+        return sum + score;
+      }, 0);
+
+      const roundData = {
+        round: currentRound,
+        offerings: allOfferingSets,
+        playerPicks: allPickedItems,
+        aiOptimalPicks,
+        playerScore,
+        aiScore,
+      };
+      setRoundHistory((prev) => [...prev, roundData]);
+      setLastRoundSummary(roundData);
+
+      // Update player build
+      const newBuilds = { ...allBuilds };
+      newBuilds[playerHero.id] = [...(newBuilds[playerHero.id] || []), ...allPickedItems];
+
+      // AI auto-pick for teammates and enemies
+      const allOtherHeroes = [...(teams?.player.slice(1) || []), ...(teams?.enemy || [])];
+      allOtherHeroes.forEach((hero) => {
+        const heroBuild = newBuilds[hero.id] || [];
+        const existingIds = new Set(heroBuild.map((i) => i.id));
+        const heroOfferings = generateAllPicksForRound(currentRound, hero, existingIds);
+        let heroBuildup = [...heroBuild];
+        const aiItems = heroOfferings.map((group) => {
+          const best = getAIBestPick(group, hero, currentRound, heroBuildup);
+          const pick = best?.item || group[0];
+          heroBuildup = [...heroBuildup, pick];
+          return pick;
+        });
+        newBuilds[hero.id] = [...heroBuild, ...aiItems];
+      });
+
+      setAllBuilds(newBuilds);
+      setRoundPhase("summary");
+    }
+  }, [selectedItemIndex, currentItems, roundPicks, roundAllOfferings, currentPickNumber, currentRound, playerHero, allBuilds, teams]);
 
   // ---- NEXT ROUND ----
   const handleNextRound = useCallback(() => {
@@ -885,18 +839,22 @@ export default function SimulationView() {
 
     const nextRound = currentRound + 1;
     setCurrentRound(nextRound);
-    setRoundPhase("offering");
+    setRoundPhase("picking");
 
-    // Reset rerolls
     const rerolls = isRandomHero && nextRound <= 2 ? 2 : 1;
     setRerollsLeft(rerolls);
 
-    // Generate new offerings
-    const existingIds = new Set((allBuilds[playerHero.id] || []).map((i) => i.id));
-    const newOfferings = generateItemOfferings(nextRound, playerHero, existingIds);
-    setOfferings(newOfferings);
-    setPlayerPicks([null, null, null]);
+    // Reset pick state
+    setRoundPicks([]);
+    setRoundAllOfferings([]);
+    setCurrentPickNumber(1);
+    setSelectedItemIndex(null);
     setLastRoundSummary(null);
+
+    const existingIds = new Set((allBuilds[playerHero.id] || []).map((i) => i.id));
+    const firstItems = generateSinglePick(nextRound, 1, playerHero, existingIds);
+    setCurrentItems(firstItems);
+    setUsedIdsThisRound(existingIds);
   }, [currentRound, isRandomHero, allBuilds, playerHero]);
 
   // ---- PLAY AGAIN ----
@@ -906,10 +864,14 @@ export default function SimulationView() {
     setIsRandomHero(false);
     setTeams(null);
     setCurrentRound(1);
-    setRoundPhase("offering");
-    setOfferings(null);
-    setPlayerPicks([null, null, null]);
+    setRoundPhase("picking");
+    setCurrentItems([]);
+    setCurrentPickNumber(1);
+    setSelectedItemIndex(null);
     setRerollsLeft(1);
+    setRoundPicks([]);
+    setRoundAllOfferings([]);
+    setUsedIdsThisRound(new Set());
     setAllBuilds({});
     setRoundHistory([]);
     setLastRoundSummary(null);
@@ -936,7 +898,6 @@ export default function SimulationView() {
   }
 
   // ---- PLAYING PHASE ----
-  const allPicked = playerPicks.every((p) => p !== null);
   const roundInfo = ROUND_INFO[currentRound];
 
   return (
@@ -957,14 +918,11 @@ export default function SimulationView() {
               fontFamily: "'Rajdhani', sans-serif", fontSize: "18px", fontWeight: 700,
               color: "#e8a535", textTransform: "uppercase",
             }}>Round {currentRound}/5</span>
-            {/* Round progress dots */}
             <div style={{ display: "flex", gap: "4px" }}>
               {[1, 2, 3, 4, 5].map((r) => (
                 <div key={r} style={{
                   width: "8px", height: "8px", borderRadius: "50%",
-                  background: r < currentRound ? "#e8a535"
-                    : r === currentRound ? "#e8a535"
-                    : "rgba(255,255,255,0.1)",
+                  background: r <= currentRound ? "#e8a535" : "rgba(255,255,255,0.1)",
                   opacity: r <= currentRound ? 1 : 0.4,
                 }} />
               ))}
@@ -984,25 +942,131 @@ export default function SimulationView() {
         </div>
       </div>
 
-      {roundPhase === "offering" && offerings && (
+      {roundPhase === "picking" && currentItems.length > 0 && (
         <>
-          {/* Offering Groups */}
+          {/* Pick progress */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px",
+          }}>
+            {[1, 2, 3].map((p) => (
+              <div key={p} style={{
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                gap: "6px", padding: "8px", borderRadius: "6px",
+                background: p === currentPickNumber
+                  ? "rgba(232,165,53,0.1)"
+                  : p < currentPickNumber
+                  ? "rgba(107,191,106,0.08)"
+                  : "rgba(255,255,255,0.02)",
+                border: p === currentPickNumber
+                  ? "1px solid rgba(232,165,53,0.3)"
+                  : p < currentPickNumber
+                  ? "1px solid rgba(107,191,106,0.2)"
+                  : "1px solid rgba(255,255,255,0.06)",
+              }}>
+                {p < currentPickNumber ? (
+                  <Check size={12} color="#6dbf6a" />
+                ) : (
+                  <span style={{
+                    fontFamily: "'Rajdhani', sans-serif", fontSize: "12px", fontWeight: 700,
+                    color: p === currentPickNumber ? "#e8a535" : "#555",
+                  }}>{p}</span>
+                )}
+                <span style={{
+                  fontFamily: "'Rajdhani', sans-serif", fontSize: "11px", fontWeight: 600,
+                  textTransform: "uppercase", letterSpacing: "0.5px",
+                  color: p === currentPickNumber ? "#e8a535" : p < currentPickNumber ? "#6dbf6a" : "#555",
+                }}>
+                  {p < currentPickNumber ? roundPicks[p - 1]?.name || "Picked" : `Pick ${p}`}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Current 3 items to choose from */}
           <div style={{
             fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", fontWeight: 600,
             color: "#888", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px",
           }}>
-            Pick 1 item from each group
+            Pick {currentPickNumber} of 3 — Choose 1 item
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "12px" }}>
-            {offerings.map((group, gi) => (
-              <OfferingGroup
-                key={gi}
-                group={group}
-                groupIndex={gi}
-                selectedIndex={playerPicks[gi]}
-                onSelect={handleItemSelect}
-              />
-            ))}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+            {currentItems.map((item, itemIndex) => {
+              const isSelected = selectedItemIndex === itemIndex;
+              return (
+                <div
+                  key={`${item.id}-${itemIndex}`}
+                  onClick={() => handleItemSelect(itemIndex)}
+                  style={{
+                    cursor: "pointer",
+                    border: isSelected ? "2px solid #e8a535" : "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: "8px",
+                    padding: isSelected ? "11px" : "12px",
+                    background: isSelected
+                      ? "rgba(232,165,53,0.08)"
+                      : "rgba(19,21,27,0.95)",
+                    position: "relative",
+                    overflow: "hidden",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {isSelected && (
+                    <div style={{
+                      position: "absolute", top: "8px", right: "8px",
+                      background: "#e8a535", borderRadius: "50%", width: "22px", height: "22px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Check size={12} color="#0a0b0f" strokeWidth={3} />
+                    </div>
+                  )}
+                  {item.legendary && (
+                    <div style={{
+                      position: "absolute", top: 0, right: isSelected ? "36px" : 0,
+                      background: "linear-gradient(135deg, transparent 50%, rgba(232,165,53,0.3) 50%)",
+                      width: "32px", height: "32px",
+                    }}>
+                      <Crown size={10} color="#e8a535" style={{ position: "absolute", top: "4px", right: "4px" }} />
+                    </div>
+                  )}
+                  {item.enhanced && (
+                    <div style={{
+                      position: "absolute", top: "6px", left: "6px",
+                      fontSize: "10px", fontWeight: 700, color: "#ffd700",
+                      background: "rgba(255,215,0,0.12)", border: "1px solid rgba(255,215,0,0.3)",
+                      borderRadius: "3px", padding: "1px 5px", textTransform: "uppercase",
+                    }}>Enhanced</div>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", marginTop: item.enhanced ? "18px" : "0" }}>
+                    <CatIcon cat={item.cat} size={16} />
+                    <span style={{
+                      fontFamily: "'Rajdhani', sans-serif", fontWeight: 600,
+                      fontSize: "16px", color: "#fff", flex: 1, lineHeight: 1.2,
+                    }}>
+                      {item.name}
+                    </span>
+                    <span style={styles.ratingBadge(getItemRating(item, null))}>{getItemRating(item, null)}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" }}>
+                    <span style={styles.catBadge(item.cat)}>{CAT_LABELS[item.cat]}</span>
+                    <span style={styles.tierBadge(item.tier)}>
+                      {item.tier === 5 ? "Legendary" : `T${TIER_NAMES[item.tier]}`}
+                    </span>
+                    {item.active && (
+                      <span style={{
+                        fontSize: "10px", fontWeight: 600, color: "#4a90d9",
+                        background: "rgba(74,144,217,0.12)", border: "1px solid rgba(74,144,217,0.3)",
+                        borderRadius: "3px", padding: "1px 5px", textTransform: "uppercase",
+                      }}>Active</span>
+                    )}
+                  </div>
+                  {item.desc && (
+                    <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#888", lineHeight: 1.3 }}>
+                      {item.desc}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Action Bar */}
@@ -1024,22 +1088,22 @@ export default function SimulationView() {
               Reroll ({rerollsLeft})
             </button>
             <button
-              onClick={handleLockIn}
-              disabled={!allPicked}
+              onClick={handleConfirmPick}
+              disabled={selectedItemIndex === null}
               style={{
-                ...styles.btn(allPicked),
+                ...styles.btn(selectedItemIndex !== null),
                 flex: 1, padding: "12px",
                 fontSize: "15px", letterSpacing: "2px",
-                background: allPicked
+                background: selectedItemIndex !== null
                   ? "linear-gradient(135deg, #e8a535, #d4943a)"
                   : "rgba(255,255,255,0.05)",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                opacity: allPicked ? 1 : 0.5,
-                cursor: allPicked ? "pointer" : "not-allowed",
+                opacity: selectedItemIndex !== null ? 1 : 0.5,
+                cursor: selectedItemIndex !== null ? "pointer" : "not-allowed",
               }}
             >
               <Check size={16} />
-              Lock In Picks
+              {currentPickNumber < 3 ? `Confirm Pick ${currentPickNumber}` : "Lock In Final Pick"}
             </button>
           </div>
         </>
@@ -1047,7 +1111,6 @@ export default function SimulationView() {
 
       {roundPhase === "summary" && lastRoundSummary && (
         <div>
-          {/* Round Summary */}
           <div style={{
             ...styles.card, marginBottom: "12px",
             border: "1px solid rgba(232,165,53,0.2)",
@@ -1060,7 +1123,6 @@ export default function SimulationView() {
               Round {currentRound} Complete
             </div>
 
-            {/* Player picks vs AI picks */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px", marginBottom: "12px" }}>
               {[0, 1, 2].map((gi) => {
                 const playerItem = lastRoundSummary.playerPicks[gi];
@@ -1080,9 +1142,8 @@ export default function SimulationView() {
                       fontSize: "10px", fontWeight: 700, color: "#666",
                       textTransform: "uppercase", marginBottom: "6px",
                     }}>
-                      Group {gi + 1} {isMatch && <Check size={10} color="#6dbf6a" />}
+                      Pick {gi + 1} {isMatch && <Check size={10} color="#6dbf6a" />}
                     </div>
-                    {/* Your pick */}
                     <div style={{
                       display: "flex", alignItems: "center", gap: "4px",
                       background: `${CAT_COLORS[playerItem.cat]}15`,
@@ -1095,7 +1156,6 @@ export default function SimulationView() {
                       </span>
                       <span style={{ fontSize: "9px", color: "#e8a535", fontWeight: 700 }}>YOU</span>
                     </div>
-                    {/* AI pick (if different) */}
                     {!isMatch && (
                       <div style={{
                         display: "flex", alignItems: "center", gap: "4px",
@@ -1115,7 +1175,6 @@ export default function SimulationView() {
               })}
             </div>
 
-            {/* Score comparison */}
             <div style={{
               display: "flex", alignItems: "center", gap: "8px",
               background: "rgba(255,255,255,0.02)", borderRadius: "6px", padding: "8px",
@@ -1141,7 +1200,6 @@ export default function SimulationView() {
             </div>
           </div>
 
-          {/* Next Round Button */}
           <button
             onClick={handleNextRound}
             style={{
